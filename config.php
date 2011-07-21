@@ -20,4 +20,13 @@ function parseFileName($fname)
 			'episode_number' => ($episode - 1) % 20 + 1,
 		);
 	}
+	// сериал "Зайцев + 1"
+	if (match($fname, '(zaicev.+1).+?(\d+)', $m))
+	{
+		return array(
+			'series_id'      => 1642278,
+			'season_number'  => 1,
+			'episode_number' => $m[2],
+		);
+	}
 }

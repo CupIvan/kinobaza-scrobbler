@@ -61,7 +61,8 @@ class kinobaza
 		if (isset($params[$x='episode_number'])) { $search = "/episodes/".$params[$x].$search; }
 		if (isset($params[$x='season_number']))  { $search = "/seasons/". $params[$x].$search; }
 		if (isset($params[$x='series_id']))      { $search = "/films/".   $params[$x].$search; $params['type'] = 'series'; }
-		if (!$search) $search = '/films/'.@$params['id'];
+		if (!$search && isset($params['id'])) $search = '/films/'.$params['id'];
+		if (!$search) return false;
 		return $params + json_decode($this->oAuth->get($this->server.$search), true);
 	}
 	/** отметить фильм */
