@@ -19,6 +19,7 @@ Usage: kinobaza [ACTION] [PARAM]
 kinobaza auth                     - authorize with oAuth
 kinobaza filename|id              - search film
 kinobaza check filename           - check  film
+kinobaza vote  filename numStars  - vote   film with 0..10 stars
 kinobaza rename filename|dir      - rename film in standart name
 kinobaza search query|filename|id - search film on server
 kinobaza help|--help              - show this help

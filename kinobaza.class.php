@@ -88,4 +88,11 @@ class kinobaza
 			return $params + json_decode($this->oAuth->post($this->server."/my/films/set-status", $params), true);
 		}
 	}
+	/** проголосовать за фильм */
+	function vote($params, $numStars)
+	{
+		if (is_string($params)) $params = array('id' => $params);
+		$params['rate'] = $numStars;
+		return $params + json_decode($this->oAuth->post($this->server."/my/films/set-status", $params), true);
+	}
 }

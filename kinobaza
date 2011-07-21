@@ -10,10 +10,10 @@ define('DIR', $dir);
 // запустили без параметров
 if ($_SERVER['argc'] == 1) help();
 
-// первый параметр
+// параметры
 $param1 = $_SERVER['argv'][1];
-// второй параметр
 $param2 = isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : '';
+$param3 = isset($_SERVER['argv'][3]) ? $_SERVER['argv'][3] : '';
 
 require_once DIR.'config.php';
 require_once DIR.'oAuth.class.php';
@@ -67,6 +67,14 @@ switch ($param1)
 		$res = search_by_file($param2);
 		$res = $kinobaza->check($res);
 		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " checked\n";
+		else echo "Not found\n";
+		break;
+	// поставить оценку
+	case 'vote':
+		if (!$param2) help();
+		$res = search_by_file($param2);
+		$res = $kinobaza->vote($res, $param3);
+		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " voted\n";
 		else echo "Not found\n";
 		break;
 	// переименование файла
