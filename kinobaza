@@ -1,5 +1,10 @@
 #!/usr/bin/php
 <?php
+/**
+ * Интерфейс командной строки
+ * @copyright 2011, CupIvan <mail@cupivan.ru>
+ * @license   http://www.gnu.org/licenses/gpl-3.0.html GPL v3
+ */
 mb_internal_encoding('utf-8');
 
 // ищем установочную директорию

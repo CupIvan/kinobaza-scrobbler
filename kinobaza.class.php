@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Класс для работы с API сайта kinobaza.tv
+ * @copyright 2011, CupIvan <mail@cupivan.ru>
+ * @license   http://www.gnu.org/licenses/gpl-3.0.html GPL v3
+ */
 class kinobaza
 {
 	private $server            = 'http://api.kinobaza.tv';

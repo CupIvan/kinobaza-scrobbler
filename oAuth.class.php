@@ -1,5 +1,9 @@
 <?php
-
+/**
+ * Простой класс для работы с oAuth в PLAINTEXT режиме
+ * @copyright 2011, CupIvan <mail@cupivan.ru>
+ * @license   http://www.gnu.org/licenses/gpl-3.0.html GPL v3
+ */
 class oAuth
 {
 	private $params = array('oauth_signature_method' => 'PLAINTEXT');
