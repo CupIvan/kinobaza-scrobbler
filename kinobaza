@@ -1,0 +1,174 @@
+#!/usr/bin/php
+<?php
+mb_internal_encoding('utf-8');
+
+// ищем установочную директорию
+$dir = dirname($_SERVER['argv'][0]) . '/';
+if (is_link($_SERVER['argv'][0])) $dir .= dirname(readlink($_SERVER['argv'][0])) . '/';
+define('DIR', $dir);
+
+// запустили без параметров
+if ($_SERVER['argc'] == 1) help();
+
+// первый параметр
+$param1 = $_SERVER['argv'][1];
+// второй параметр
+$param2 = isset($_SERVER['argv'][2]) ? $_SERVER['argv'][2] : '';
+
+require_once DIR.'config.php';
+require_once DIR.'oAuth.class.php';
+require_once DIR.'kinobaza.class.php';
+
+$kinobaza = new kinobaza($oAuth_token);
+
+// если первый параметр имя файла - ищем его
+if (file_exists($param1) || (int)$param1)
+{
+	$param2 = $param1;
+	$param1 = 'search';
+}
+
+// обрабатываем параметры
+switch ($param1)
+{
+	// авторизация
+	case 'auth':
+		$token = $kinobaza->auth();
+		// сохраняем токен в конфиге
+		$config = DIR.'config.php';
+		$st = file_get_contents($config);
+		$st = preg_replace('#// ACCESS TOKEN.+?\);#s',
+			"// ACCESS TOKEN\n".
+			"// autoupdated at ".date("H:i:s d.m.y\n").
+			"\$oAuth_token = array(\n".
+				"\t'oauth_token'        => '".$token['oauth_token']."',\n".
+				"\t'oauth_token_secret' => '".$token['oauth_token_secret']."',\n".
+			");",
+			$st
+		);
+		file_put_contents($config, $st);
+		echo "Token saved in '$config'\n";
+		break;
+	// поиск
+	case 'search':
+		if (!$param2) help();
+
+		if ((int)$param2)
+			output($kinobaza->search_by_id($param2));
+		else
+		if (file_exists($param2))
+			output(search_by_file($param2));
+		else
+			output($kinobaza->search($param2));
+		break;
+	// отметить просмотренным
+	case 'check':
+		if (!$param2) help();
+		$res = search_by_file($param2);
+		$res = $kinobaza->check($res);
+		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " checked\n";
+		else echo "Not found\n";
+		break;
+	// переименование файла
+	case 'rename':
+		if (!$param2) help();
+
+		if (is_dir($param2))
+		{
+			$param2 = str_replace('//', '/', "$param2/");
+			echo "Rename all movies in '$param2'\n";
+			$list = scandir($param2);
+			for ($i = 0; $i < count($list); $i++)
+			if (is_file($param2.$list[$i]))
+				rename_title($param2.$list[$i]);
+		}
+		else rename_title($param2);
+		break;
+	// помощь
+	case 'help': case '--help': help();
+}
+
+/** поиск по регулярке в имени файла */
+function match($fname, $regexp, &$m = '')
+{
+	return preg_match("/$regexp/ui", $fname, $m);
+}
+
+/** поиск по имени файла */
+function search_by_file($fname)
+{
+	global $kinobaza;
+	// ищем по хэшу
+	$res = $kinobaza->search_by_file($fname);
+	// если не найдено - пробуем обработать имя файла и поискать по имени
+	if (!$res)
+	{
+		$id  = parseFileName(basename($fname));
+		$res = $kinobaza->search_by_id($id);
+	}
+	return $res;
+}
+
+/** выводим результат */
+function output($x)
+{
+	if (isset($x[0]))
+	{
+		for ($i = 0; $i < count($x); $i++)
+			output($x[$i], $i+1);
+		return;
+	}
+
+	$st = human_name($x);
+	if ($st)
+		echo sprintf("#%-8d %s (%s)\n", isset($x['id']) ? $x['id'] : $x['series_id'], $st, $x['type']);
+	else
+		echo "Not found\n";
+}
+
+/** переименование файла */
+function rename_title($fname)
+{
+	global $kinobaza;
+	$res      = search_by_file($fname);
+	if (!$res) { echo "$fname [ERROR]\n"; return; }
+	$ext      = substr($fname, strrpos($fname, '.'));
+	$folder   = substr($fname, 0, strrpos($fname, '/') + 1);
+	$new_name = $folder.human_name($res).$ext;
+
+	if ($fname != $new_name)
+	{
+		if (file_exists($new_name))
+			echo "$fname [EXIST]\n";
+		else
+		{
+			echo "$fname -> $new_name\n";
+			rename($fname, $new_name);
+		}
+	}
+	else
+		echo "$fname [SKIP]\n";
+}
+
+/** название фильма в читаемом виде */
+function human_name($x)
+{
+	if (!isset($x['name'])) return '';
+	$year    = (int)@$x['year'] ? ', '.$x['year'] : '';
+	return episode($x).$x['name'].$year;
+}
+
+/** кодирование эпизода */
+function episode($x)
+{
+	return isset($x['episode_number']) ? 's'.$x['season_number'].'e'.sprintf('%02d', $x['episode_number']).' ': '';
+}
+
+/** выводим хелп */
+function help()
+{
+	$st = file_get_contents(DIR.'README');
+	$st = preg_replace('/.+(Usage:)/s', '$1', $st);
+	echo $st;
+	exit;
+}

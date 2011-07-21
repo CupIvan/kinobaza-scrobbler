@@ -1,0 +1,24 @@
+INSTALL
+=======
+
+Before usage you need to create symlink in your bin folder:
+    ln -s REPO_DIR/kinobaza ~/bin/
+
+Then you have to recieve access token:
+    kinobaza auth
+
+For autocheck films you have to add an alias to your .bashrc:
+    alias mplayer='REPO_DIR/mplayer-handler'
+
+
+USAGE
+=====
+
+Usage: kinobaza [ACTION] [PARAM]
+
+kinobaza auth                     - authorize with oAuth
+kinobaza filename|id              - search film
+kinobaza check filename           - check  film
+kinobaza rename filename|dir      - rename film in standart name
+kinobaza search query|filename|id - search film on server
+kinobaza help|--help              - show this help

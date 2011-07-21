@@ -1,0 +1,30 @@
+#!/bin/bash
+
+# время начала просмотра
+ST=`date '+%s'`
+SD=`date '+%d.%m.%Y %H:%M'`
+
+TMP=/tmp/film
+mplayer "$@" | tee $TMP
+
+# время конца просмотра
+ET=`date '+%s'`
+
+# продолжителность в секундах
+TS=$(( $ET - $ST ))
+echo "duration: $TS sec"
+
+if (($TS > 60))
+then
+
+	# отмечаем время просмотра
+	#echo "$SD + "`php -r "echo date('H:i', 21*3600+$TS);"`" $1" >> ~/video/watched
+
+	# отмечаем просмотренный фильм
+	T=`cat $TMP | grep 'End'`
+	if [[ "$T" != "1" ]]
+	then
+		# kinobaza.tv
+		kinobaza check "$1"
+	fi
+fi
