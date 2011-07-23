@@ -118,7 +118,7 @@ function search_by_file($fname)
 	// если не найдено - пробуем обработать имя файла и поискать по имени
 	if (!$res)
 	{
-		$id  = parseFileName(basename($fname));
+		$id  = parseFileName(realpath($fname));
 		$res = $kinobaza->search_by_id($id);
 	}
 	return $res;
