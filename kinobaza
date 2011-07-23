@@ -58,11 +58,11 @@ switch ($param1)
 	case 'search':
 		if (!$param2) help();
 
-		if ((int)$param2)
-			output($kinobaza->search_by_id($param2));
-		else
 		if (file_exists($param2))
 			output(search_by_file($param2));
+		else
+		if ((int)$param2)
+			output($kinobaza->search_by_id($param2));
 		else
 			output($kinobaza->search($param2));
 		break;
@@ -86,6 +86,8 @@ switch ($param1)
 	case 'rename':
 		if (!$param2) help();
 
+		$createSymlink = $param3 == '--symlink' ? 1 : 0;
+
 		if (is_dir($param2))
 		{
 			$param2 = str_replace('//', '/', "$param2/");
@@ -93,9 +95,9 @@ switch ($param1)
 			$list = scandir($param2);
 			for ($i = 0; $i < count($list); $i++)
 			if (is_file($param2.$list[$i]))
-				rename_title($param2.$list[$i]);
+				rename_title($param2.$list[$i], $createSymlink);
 		}
-		else rename_title($param2);
+		else rename_title($param2, $createSymlink);
 		break;
 	// помощь
 	case 'help': case '--help': help();
@@ -140,13 +142,13 @@ function output($x)
 }
 
 /** переименование файла */
-function rename_title($fname)
+function rename_title($fname, $createSymlink = 0)
 {
 	global $kinobaza;
 	$res      = search_by_file($fname);
 	if (!$res) { echo "$fname [ERROR]\n"; return; }
 	$ext      = substr($fname, strrpos($fname, '.'));
-	$folder   = substr($fname, 0, strrpos($fname, '/') + 1);
+	$folder   = ($n = strrpos($fname, '/')) ? substr($fname, 0, $n + 1) : '';
 	$new_name = $folder.human_name($res).$ext;
 
 	if ($fname != $new_name)
@@ -155,8 +157,13 @@ function rename_title($fname)
 			echo "$fname [EXIST]\n";
 		else
 		{
-			echo "$fname -> $new_name\n";
-			rename($fname, $new_name);
+			echo "mv $fname -> $new_name";
+			echo @rename($fname, $new_name) ? " [OK]\n" : " [ERROR]\n";
+			if ($createSymlink)
+			{
+				echo "ln $new_name -> $fname";
+				echo @symlink($new_name, $fname) ? " [OK]\n" : " [ERROR]\n";
+			}
 		}
 	}
 	else
