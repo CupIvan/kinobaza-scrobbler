@@ -67,7 +67,9 @@ class kinobaza
 		if (isset($params[$x='series_id']))      { $search = "/films/".   $params[$x].$search; $params['type'] = 'series'; }
 		if (!$search && isset($params['id'])) $search = '/films/'.$params['id'];
 		if (!$search) return false;
-		return $params + json_decode($this->oAuth->get($this->server.$search), true);
+		$res = json_decode($this->oAuth->get($this->server.$search), true);
+		if (!$res) $res = array();
+		return $params + $res;
 	}
 	/** отметить фильм */
 	function check($params)
@@ -83,13 +85,15 @@ class kinobaza
 				'inclusive' => 0,
 			);
 			$res = $this->oAuth->post($this->server."/my/series/mark-seen", $p);
-			if (!$res) die("oAuth error! Cann't check film!\n");
+			if (!$res) die("oAuth error! Cann't check serial!\n");
 			return $params + json_decode($res, true);
 		}
 		else
 		{
 			$params['status'] = 'seen';
-			return $params + json_decode($this->oAuth->post($this->server."/my/films/set-status", $params), true);
+			$res = $this->oAuth->post($this->server."/my/films/set-status", $params);
+			if (!$res) die("oAuth error! Cann't check film!\n");
+			return $params + json_decode($res, true);
 		}
 	}
 	/** проголосовать за фильм */
@@ -97,6 +101,8 @@ class kinobaza
 	{
 		if (is_string($params)) $params = array('id' => $params);
 		$params['rate'] = $numStars;
-		return $params + json_decode($this->oAuth->post($this->server."/my/films/set-status", $params), true);
+		$res = $this->oAuth->post($this->server."/my/films/set-status", $params);
+		if (!$res) die("oAuth error! Cann't vote film!\n");
+		return $params + json_decode($res, true);
 	}
 }

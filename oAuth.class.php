@@ -22,7 +22,7 @@ class oAuth
 	function getRequestToken($uri)
 	{
 		$context = stream_context_create($this->getOpts($uri));
-		parse_str(file_get_contents($uri, false, $context), $data);
+		parse_str(@file_get_contents($uri, false, $context), $data);
 		$this->params = array_merge($this->params, $data);
 		return $data;
 	}
@@ -39,7 +39,7 @@ class oAuth
 	public function get($uri)
 	{
 		$context = stream_context_create($this->getOpts($uri, 'GET'));
-		return file_get_contents($uri, false, $context);
+		return @file_get_contents($uri, false, $context);
 	}
 	/** отправка данных */
 	public function post($uri, $data = '')
