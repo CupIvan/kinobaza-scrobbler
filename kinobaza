@@ -57,19 +57,13 @@ switch ($param1)
 	// поиск
 	case 'search':
 		if (!$param2) help();
-
-		if (file_exists($param2))
-			output(search_by_file($param2));
-		else
-		if ((int)$param2)
-			output($kinobaza->search_by_id($param2));
-		else
-			output($kinobaza->search($param2));
+		$res = search($param2);
+		output($res);
 		break;
 	// отметить просмотренным
 	case 'check':
 		if (!$param2) help();
-		$res = search_by_file($param2);
+		$res = search($param2);
 		$res = $kinobaza->check($res);
 		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " checked\n";
 		else echo "Not found\n";
@@ -77,16 +71,16 @@ switch ($param1)
 	// поставить оценку
 	case 'vote':
 		if (!$param2) help();
-		$res = search_by_file($param2);
+		$res = search($param2);
 		$res = $kinobaza->vote($res, $param3);
-		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " voted\n";
+		if ($res) echo '#' . (isset($res['id']) ? $res['id'] : $res['series_id']) . ' ' . episode($res) . " voted $param3\n";
 		else echo "Not found\n";
 		break;
 	// переименование файла
 	case 'rename':
 		if (!$param2) help();
 
-		$createSymlink = $param3 == '--symlink' ? 1 : 0;
+		$createSymlink = $param3 == '--nosymlink' ? 0 : 1;
 
 		if (is_dir($param2))
 		{
@@ -109,18 +103,35 @@ function match($fname, $regexp, &$m = '')
 	return preg_match("/$regexp/ui", $fname, $m);
 }
 
-/** поиск по имени файла */
-function search_by_file($fname)
+/** поиск */
+function search($fname)
 {
 	global $kinobaza;
+	$res = 0;
+
+	// поиск по идентификатору
+	if (preg_match('/^\d+$/', $fname))
+	{
+		$id  = (int)$fname;
+		$res = $kinobaza->search_by_id($id);
+	}
+
 	// ищем по хэшу
-	$res = $kinobaza->search_by_file($fname);
+	if (!$res && file_exists($fname))
+	{
+		$fname = realpath($fname);
+		$res = $kinobaza->search_by_file($fname);
+	}
+
 	// если не найдено - пробуем обработать имя файла и поискать по имени
 	if (!$res)
 	{
-		$id  = parseFileName(realpath($fname));
-		$res = $kinobaza->search_by_id($id);
+		$fname = preg_replace('#/[a-z/]+/#i', '', $fname);
+		$name = preg_replace('/\.[a-z]+/i', '', $fname);
+		$res  = $kinobaza->search($name);
 	}
+
+	if (!$res) die("Not found\n");
 	return $res;
 }
 
@@ -138,15 +149,17 @@ function output($x)
 	if ($st)
 		echo sprintf("#%-8d %s (%s)\n", isset($x['id']) ? $x['id'] : $x['series_id'], $st, $x['type']);
 	else
-		echo "Not found\n";
+		echo "Error!\n";
 }
 
 /** переименование файла */
-function rename_title($fname, $createSymlink = 0)
+function rename_title($fname, $createSymlink = 1)
 {
 	global $kinobaza;
-	$res      = search_by_file($fname);
+	$res      = search($fname);
 	if (!$res) { echo "$fname [ERROR]\n"; return; }
+	if (is_array($res) && isset($res[0])) $res = $res[0];
+
 	$ext      = substr($fname, strrpos($fname, '.'));
 	$folder   = ($n = strrpos($fname, '/')) ? substr($fname, 0, $n + 1) : '';
 	$new_name = $folder.human_name($res).$ext;
@@ -154,7 +167,7 @@ function rename_title($fname, $createSymlink = 0)
 	if ($fname != $new_name)
 	{
 		if (file_exists($new_name))
-			echo "$fname [EXIST]\n";
+			echo "$new_name [EXIST]\n";
 		else
 		{
 			echo "mv $fname -> $new_name";
