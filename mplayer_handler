@@ -5,6 +5,7 @@ ST=`date '+%s'`
 SD=`date '+%d.%m.%Y %H:%M'`
 
 TMP=/tmp/film
+rm -f /tmp/kino_vote 2>/dev/null
 mplayer "$@" | tee $TMP
 
 # время конца просмотра
@@ -14,17 +15,28 @@ ET=`date '+%s'`
 TS=$(( $ET - $ST ))
 echo "duration: $TS sec"
 
+VOTE=`cat /tmp/kino_vote 2>/dev/null`
+
 if (($TS > 60))
 then
 
 	# отмечаем время просмотра
-	#echo "$SD + "`php -r "echo date('H:i', 21*3600+$TS);"`" $1" >> ~/video/watched
+	echo "$SD + "`php -r "echo date('H:i', 21*3600+$TS);"`" $1" >> ~/video/watched
 
 	# отмечаем просмотренный фильм
 	T=`cat $TMP | grep 'End'`
 	if [[ "$T" != "1" ]]
 	then
 		# kinobaza.tv
-		kinobaza check "$1"
+		if [[ "$VOTE" == "" ]]
+		then
+			kinobaza check "$1"
+		fi
 	fi
+fi
+
+# ставим оценку фильму
+if [[ "$VOTE" != "" ]]
+then
+	kinobaza vote "$1" "$VOTE"
 fi
